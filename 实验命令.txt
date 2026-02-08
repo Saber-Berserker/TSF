@@ -1,0 +1,3 @@
+sudo python -m cProfile -o output.prof Main.py
+ps aux | grep python
+pidstat -r -u -p 1007365 1 | awk '{ print strftime("%F %T"), $0 }' > pidstat.log

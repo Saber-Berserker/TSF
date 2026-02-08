@@ -1,0 +1,57 @@
+# Python 3.11+ 使用 tomllib，旧版本需 pip install tomli
+will_draw = false   # 是否绘制拓扑图展示
+os_username = "ylc"
+
+[paths]
+logs = "logs/"
+scenarios = "scenarios/"
+ONOS_ROOT_DIR = "/home/ylc/onos/"
+flt_classes_dir = "/home/ylc/floodlight/target/classes_runtime/"
+trigger_packet = "trigger_packet.txt"
+
+[network]
+proxy_host = "http://172.16.120.212"   # 下载更新 ONOS 用的
+proxy_port = "8489"
+
+
+[algorithm]
+odl_key = "aa9251f8-c7c0-4322-b8d6-c3a84593bda3"    # 20.3 版本 ODL 的 Key
+env_constraint_enable = true   # 环境约束启用与否，使用小写 true/false
+swarm_total_times = 5   # 总次数
+swarm_iterations = 3    # 种群遍历数
+# swarm_extra_init_times = 2    # 总次数 - 种群遍历数=额外次数
+
+# 正常测试用
+fuzz_scenario_times = 15    # 模糊测试场景次数
+fuzz_lldp_times = 50    # 模糊测试场景内 LLDP 包次数
+lldp_mutation_iteration_max = 17    # 单个 LLDP 变异最大迭代次数,太大影响场景的布置，太小影响可能性
+
+# 测试代码用
+#fuzz_lldp_times = 1
+#fuzz_scenario_times = 2
+#lldp_mutation_iteration_max = 1
+
+# 评估用
+#fuzz_lldp_times = 25
+#fuzz_scenario_times = 15
+#lldp_mutation_iteration_max = 13
+
+malicious_host = "h1"
+get_latency_cmd = "h1 ping -c 3 h5"
+
+[tlv_info]
+tlv_start_index = 14    # TLV 开始的索引值
+
+# 根据长度判断是否是哪个控制器的哪种 LLDP 包（ONOS有两个）, 90(84), 160(150), 290(278), 180(170) 分别区分
+[ofdp_delimited_length]
+onos_1 = 90
+floodlight = 160
+opendaylight = 180
+onos_2 = 290
+
+[logging]
+context.log_level = 'debug'  # 调整 pwn 的 log 等级可以输出更多接收的信息
+
+
+
+
