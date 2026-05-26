@@ -111,6 +111,10 @@ sudo python3 Main.py
 
 ```
 
+**5. Check the Execution Status**
+
+During the execution of TSF, you can view the log output in the console, and also access the log files in the `logs/` folder. The `interesting.log` file in the folder records the execution status of Oracle that was triggered.
+
 ## 📊 Topology Design
 
-TSF evaluates the controllers using a hybrid, asymmetric topology that incorporates both SDN switches and legacy switches. This design effectively triggers the controller's boundary logic and exposes potential defects in path computation and topology discovery. You can find the topology scripts in the `topologies`/`topography` directory.
+TSF evaluates the controllers using a hybrid, asymmetric topology that incorporates both SDN switches and legacy switches. This design effectively triggers the controller's boundary logic and exposes potential defects in path computation and topology discovery. You can find the topology scripts in the `topologies`/`topography` directory .
