@@ -50,7 +50,7 @@ For reproducible results, deploy the specific controller versions tested (During
 ```bash
 # Build and run ONOS with a clean debug state
 bazel run onos-local -- clean debug
-
+bazel run onos-local --jobs=6 --action_env=HTTP_PROXY=$http_proxy  # Set parameters based on the startup time and network status
 ```
 
 *Note: The Web UI is accessible at `http://localhost:8181/onos/ui` (Default credentials: `onos/rocks`).*
@@ -66,10 +66,10 @@ java -jar target/floodlight.jar
 
 ### 3. OpenDaylight (v20.3 / Calcium SR3)
 
-Ensure `JAVA_HOME` is set to JDK 11 before starting.
+Ensure `JAVA_HOME` is set to JDK 17 before starting.
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ./bin/karaf
 
 ```
@@ -99,10 +99,12 @@ pip3 install -r requirements.txt
 ```
 
 **3. Configure the Fuzzer**
+
 Edit the `config.toml` file in the root directory to specify your target controller, IP, OpenFlow port (e.g., 6653 or 6633), and desired fuzzing parameters.
 
 **4. Start the Fuzzing Campaign**
-TSF requires root privileges to operate Mininet and inject raw Ethernet frames.
+
+TSF requires root privileges to operate Mininet and inject raw Ethernet frames. You need to input the startup preferences according to the prompts of the TSF system.
 
 ```bash
 sudo python3 Main.py
