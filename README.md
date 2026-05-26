@@ -1,33 +1,22 @@
-没问题，写成 `README.md` 确实更实用。一份优秀的 README 不仅能清晰地展示你的学术成果，还能极大降低其他研究人员复现你实验的门槛。
-
-这里为你整理了一份专业、结构清晰且直接可以挂在 GitHub 仓库主页上的 `README.md` 模板。内容已经结合了你的论文核心贡献和工程笔记。
-
----
-
 # TSF (TopoState-Fuzzer)
 
-**TopoState-Fuzzer (TSF)** is the first topology-state heuristic fuzzer designed specifically for the OpenFlow Discovery Protocol (OFDP) in Software-Defined Networking (SDN). It automates the discovery of deep-seated protocol implementation flaws and logic vulnerabilities in SDN controllers by leveraging topology state guidance and semantic-operational feedback.
+**TopoState-Fuzzer (TSF)** is the first topology-state heuristic fuzzer designed specifically for the OpenFlow Discovery Protocol (OFDP) in Software-Defined Networking (SDN). It automates the discovery of deep-seated protocol implementation flaws and logic vulnerabilities in SDN controllers by leveraging topology state guidance and Multidimensional feedback.
 
 ## 🌟 Key Features
 
-* 
-**Scenario-Aware Test Generation:** Targets contextual vulnerabilities involving multiple OFDP packets by mutating pre-defined scenario streams rather than isolated packets.
+- **Scenario-Aware Test Generation:** Targets contextual vulnerabilities involving multiple OFDP packets by mutating pre-defined scenario streams rather than isolated packets.
 
 
-* 
-**Multi-Source SDN Oracle:** Continuously monitors controller behavior (anomalies), link communication states, and global topology consistency to capture silent or deep-seated bugs.
+- **Multi-Source SDN Oracle:** Continuously monitors controller behavior (anomalies), link communication states, and global topology consistency to capture silent or deep-seated bugs.
 
 
-* 
-**Semantic-Operational Feedback:** Replaces conventional code-coverage with an SDN-specific feedback model to dynamically optimize the MOPT scheduler's strategy selection.
+- **Semantic-Operational Feedback:** Replaces conventional code-coverage with an SDN-specific feedback model to dynamically optimize the MOPT scheduler's strategy selection.
 
 
-* 
-**Automated Scripted Restarts:** Eliminates state caching and pollution by enforcing a complete environment reset (graceful shutdown and restart) after each test cycle, ensuring high reliability and a low false-positive rate.
+- **Automated Scripted Restarts:** Eliminates state caching and pollution by enforcing a complete environment reset (graceful shutdown and restart) after each test cycle, ensuring high reliability and a low false-positive rate.
 
 
-* 
-**Low Overhead:** Maintains stable memory usage (140 MB to 160 MB) and extremely low average CPU utilization (2% to 6%) under high-concurrency conditions.
+- **Low Overhead:** Maintains stable memory usage (140 MB to 160 MB) and extremely low average CPU utilization (2% to 6%) under high-concurrency conditions.
 
 
 
@@ -37,35 +26,19 @@ TSF has been evaluated on three mainstream SDN controllers and successfully unco
 
 | CVE-ID | Controller | Type | Description |
 | --- | --- | --- | --- |
-| **CVE-2025-29310** | ONOS | Syntactic | A malformed LLDP End TLV triggers a deserialization failure, causing switch reconnections, flow-table loss, and DoS.
-
- |
-| **CVE-2025-29312** | ONOS | Syntactic | Forged LLDP packets permanently convert non-direct links to direct links, leading to topology deception.
-
- |
-| **CVE-2025-45480** | Floodlight | Semantic | Link-spoofing misclassifies host ports as non-boundary, blocking Packet-In forwarding and flow rule installation.
-
- |
-| **Pending** | OpenDaylight | Semantic | Incomplete signature validation allows attackers to modify TLV fields while preserving the original signature to fabricate malicious links.
-
- |
+| **CVE-2025-29310** | ONOS | Syntactic | A malformed LLDP End TLV triggers a deserialization failure, causing switch reconnections, flow-table loss, and DoS.|
+| **CVE-2025-29312** | ONOS | Syntactic | Forged LLDP packets permanently convert non-direct links to direct links, leading to topology deception.|
+| **CVE-2025-45480** | Floodlight | Semantic | Link-spoofing misclassifies host ports as non-boundary, blocking Packet-In forwarding and flow rule installation.|
+| **Pending** | OpenDaylight | Semantic | Incomplete signature validation allows attackers to modify TLV fields while preserving the original signature to fabricate malicious links.|
 
 ## ⚙️ Environment Prerequisites
 
 To avoid network I/O bottlenecks and ensure stable fuzzing execution, it is recommended to co-locate TSF, the Mininet emulator, and the target controller on a dedicated high-performance server (e.g., Ubuntu, Intel Xeon, 64GB RAM).
 
-* 
-**OS:** Ubuntu Linux 
-
-
-* **Python:** Python 3 (For the TSF framework)
-* 
-**Emulator:** Mininet v2.2.2 
-
-
-* 
-**Core Libraries:** `Pwntools` (for lifecycle management), `Scapy` (for packet injection), `NetworkX` & `JSON` (for topology graph consistency checking).
-
+- **OS:** Ubuntu Linux 
+- **Python:** Python 3 (For the TSF framework)
+- **Emulator:** Mininet v2.2.2 
+- **Core Libraries:** `Pwntools` (for lifecycle management), `Scapy` (for packet injection), `NetworkX` & `JSON` (for topology graph consistency checking).
 
 
 ## 🚀 Target Controller Deployment
