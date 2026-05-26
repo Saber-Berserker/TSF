@@ -1,0 +1,20 @@
+# TSF dependencies
+#
+# Note:
+# - This file is inferred from imports found in the repository (Main.py, Utils.py, MutatorManager.py, Mutators.py, etc.).
+# - It intentionally pins only minimal lower-bounds where appropriate. If you need fully reproducible runs,
+#   consider freezing exact versions after a successful installation: `pip freeze > requirements-lock.txt`.
+
+bitarray>=2.9.0
+loguru>=0.7.0
+mmh3>=4.0.0
+numpy>=1.23.0
+pwntools>=4.10.0
+psutil>=5.9.0
+requests>=2.31.0
+scapy>=2.5.0
+
+# For reading config.toml in Python < 3.11
+# (Main.py uses: import tomli as tomllib)
+# If you run Python 3.11+, you can remove this dependency and change the import to `import tomllib`.
+tomli>=2.0.1
