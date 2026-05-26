@@ -107,8 +107,8 @@ Edit the `config.toml` file in the root directory to specify your target control
 TSF requires root privileges to operate Mininet and inject raw Ethernet frames. You need to input the startup preferences according to the prompts of the TSF system.
 
 ```bash
-sudo python3 Main.py
-
+sudo python3 Main.py  # The root user has installed the dependencies.
+sudo -E python3 Main.py  # The root user has not installed the dependencies. The dependencies installed by the current user will be used instead.
 ```
 
 **5. Check the Execution Status**
