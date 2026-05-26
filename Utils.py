@@ -19,6 +19,7 @@ import psutil
 import requests
 from loguru import logger
 from pwn import process, STDOUT
+from pwnlib.tubes.process import PTY
 from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
 from urllib3 import Retry
@@ -44,7 +45,7 @@ onos_password = 'rocks'
 odl_username = 'admin'
 odl_password = 'admin'
 
-java_home = '/usr/lib/jvm/java-17-openjdk-amd64/'
+java_home = '/usr/lib/jvm/java-21-openjdk-amd64/'
 
 # 获取拓扑的URL
 onos_switches_url = f'http://{onos_host}:{onos_port}/onos/v1/devices'
@@ -198,7 +199,9 @@ def start_floodlight(tsf_username: str, is_eval: bool) -> process:
     if is_eval:
         floodlight.sendline(
             f'export JAVA_OPTS=-javaagent:{os.path.dirname(os.path.abspath(__file__))}/evaluation/jacoco/lib/jacocoagent.jar=output=tcpserver,address=*,port=6300,'
-            f'includes=net.floodlightcontroller.linkdiscovery.*:net.floodlightcontroller.topology.*:net.floodlightcontroller.routing.*:net.floodlightcontroller.forwarding.*'.encode()) # floodlight 需要后续手动添加 java 参数
+            f'includes=net.floodlightcontroller.linkdiscovery.*:net.floodlightcontroller.topology.*:net.floodlightcontroller.routing.*:'
+            f'net.floodlightcontroller.devicemanager.*:net.floodlightcontroller.packet.*:net.floodlightcontroller.storage.*:'
+            f'net.floodlightcontroller.learningswitch.*:net.floodlightcontroller.forwarding.*'.encode()) # floodlight 需要后续手动添加 java 参数
     floodlight.sendline(f'source {project_path}/tools/run_floodlight.sh'.encode())
 
     floodlight.recvuntil(b'Starting DebugServer on')  # Wait for Floodlight to start
@@ -220,9 +223,10 @@ def close_floodlight(floodlight: process):
     logger.info("Floodlight closed.")
 
 
-def start_opendaylight(tsf_username: str) -> process:
+def start_opendaylight(tsf_username: str, odl_root_dir: str, is_eval: bool) -> process:
     """
-    启动 OpenDayLight.
+    启动 OpenDayLight,需要在 org.apache.karaf.features.cfg 修改 featuresBoot，设置自启动项
+    :param odl_root_dir:
     :param tsf_username:
     :return:
     """
@@ -231,7 +235,13 @@ def start_opendaylight(tsf_username: str) -> process:
 
     odl = process(['sudo', '-iu', tsf_username])  # 进入 tsf 用户的 shell 和环境
     # odl.sendline(b'export JAVA_DEBUG_OPTS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=\*:5005')  # 开启远程调试
+    odl.sendline(f'export ODL_ROOT={odl_root_dir}'.encode())
     odl.sendline(f'export JAVA_HOME={java_home}'.encode())
+    if is_eval is True:
+        odl.sendline(f'export EXTRA_JAVA_OPTS="-javaagent:{os.path.dirname(os.path.abspath(__file__))}/evaluation/jacoco/lib/jacocoagent.jar='
+                     f'includes=org.opendaylight.openflowplugin.applications.lldpspeaker.*:org.opendaylight.openflowplugin.applications.lldpdiscovery.*:'
+                     f'org.opendaylight.openflowplugin.applications.topology.manager.*:org.opendaylight.openflowplugin.libraries.liblldp.*:'
+                     f'org.opendaylight.openflowjava.*,output=tcpserver,address=127.0.0.1,port=6300"'.encode())  # odl 的 shell 脚本会读取此环境变量接到 java 命令行参数中
     odl.sendline(f'source {project_path}/tools/run_odl.sh'.encode())  # 需要在指定文件中预先添加自启动的feature
 
     # 等待启动的odl高亮提示符比特字符串
@@ -276,7 +286,7 @@ def start_mininet(controller_type: int, controller: process = None) -> process:
 
     # noinspection SpellCheckingInspection
     mininet_process = process(
-        ['sudo', 'mn', '--custom', 'topologies/mix_topo.py', '--topo', 'mytopo', '--controller', 'remote'])
+        ['sudo', 'mn', '--custom', 'topologies/mix_topo.py', '--topo', 'mytopo', '--controller', 'remote'], stdin=PTY,stdout=PTY,stderr=STDOUT)
 
     try:
         mininet_process.recvuntil(b"Starting CLI:")
@@ -284,7 +294,7 @@ def start_mininet(controller_type: int, controller: process = None) -> process:
         mininet_process.wait()  # 等待 mininet 进程正常结束
         # noinspection SpellCheckingInspection
         mininet_process = process(
-            ['sudo', 'mn', '--custom', 'topologies/mix_topo.py', '--topo', 'mytopo', '--controller', 'remote'])
+            ['sudo', 'mn', '--custom', 'topologies/mix_topo.py', '--topo', 'mytopo', '--controller', 'remote'], stdin=PTY,stdout=PTY,stderr=STDOUT)
         mininet_process.recvuntil(b"Starting CLI:")
 
     if controller_type != 3:  # ODL 不需要 pingall, 因为没有对应组件 ping 不通
@@ -331,7 +341,8 @@ def get_switches(controller_type: str,
     if controller_type == 'ONOS':
         response = requests.get(onos_switches_url, auth=HTTPBasicAuth(onos_username, onos_password))
     elif controller_type == 'Floodlight':
-        response = requests.get(floodlight_switches_url)
+        # response = requests.get(floodlight_switches_url)
+        response = request_with_retry(floodlight_switches_url)
     else:
         raise ValueError("Invalid controller type.")
 
@@ -388,7 +399,8 @@ def get_hosts(controller_type: str, topology: Union[ONOS_TopologyComponent.Topol
     if controller_type == 'ONOS':
         response = requests.get(onos_hosts_url, auth=HTTPBasicAuth(onos_username, onos_password))
     elif controller_type == 'Floodlight':
-        response = requests.get(floodlight_hosts_url)
+        # response = requests.get(floodlight_hosts_url)
+        response = request_with_retry(floodlight_hosts_url)
     else:
         raise ValueError("Invalid controller type.")
 
@@ -557,7 +569,7 @@ def get_jacoco_report(controller:str, classes_dir:str, jacoco_cli_file: str, exe
         "--address", "127.0.0.1", "--port", "6300", "--destfile", exec_file_path
     ]
 
-    if controller == 'ONOS':
+    if controller == 'onos':
         onos_root_dir = classes_dir  # 因为 process 是系统调用，会绕过 shell 执行程序——shell的bash_rc不会执行，因此需要手动获取路径
         # Report 命令，java -jar /home/avaritia/Project/TSF/Jacoco/lib/jacococli.jar report tmp/onos-coverage.exec --classfiles ~/Project/onos/bazel-bin/core/api/libonos-api.jar --classfiles ~/Project/onos/bazel-bin/utils/misc/libonlab-misc.jar --xml tmp/onos-report.xml
         report_cmd = [
@@ -566,11 +578,17 @@ def get_jacoco_report(controller:str, classes_dir:str, jacoco_cli_file: str, exe
             "--classfiles", f"{onos_root_dir}bazel-bin/utils/misc/libonlab-misc.jar",
             "--xml", xml_file_path
         ]
-    elif controller == 'Floodlight':
+    elif controller == 'floodlight':
         # floodlight 这个需要在新目录 classes_runtime 使用 jar xf 提取一下 jar 包，然后删除 javax目录（含多重同名依赖），这样 Jacoco 才能成功解析
         report_cmd = [
             "java", "-jar", jacoco_cli_file, "report", exec_file_path,
             "--classfiles", f"{classes_dir}net/floodlightcontroller/",  # floodlight 项目不大直接在 classfiles 指定目录让 Jacoco 自己搜索即可
+            "--xml", xml_file_path
+        ]
+    elif controller == 'odl':
+        report_cmd = [
+            "java", "-jar", jacoco_cli_file, "report", exec_file_path,
+            "--classfiles", f"{classes_dir}org/opendaylight/openflowplugin/",  # 在 classfiles 指定目录让 Jacoco 自己搜索
             "--xml", xml_file_path
         ]
     else:
@@ -587,9 +605,10 @@ def get_jacoco_report(controller:str, classes_dir:str, jacoco_cli_file: str, exe
         print(f"[!] Coverage update failed: {e}")
 
 
-def parse_score(xml_file) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
+def parse_score(controller:str, xml_file:str) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
     """
     从 Jacoco XML 文件中提取分数.
+    :param controller:
     :param xml_file: XML 文件路径
     :return: 分数值
     """
@@ -599,7 +618,7 @@ def parse_score(xml_file) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
 
         # 1. 定义需要关注的拓扑相关包 (注意：JaCoCo XML中使用 '/' 而非 '.' 分隔)
         # 定义目标包（使用 . 作为通用匹配，代码里会自动处理）
-        target_packages = [
+        target_packages = {'onos': [
             "org.onosproject.net.topology",
             "org.onosproject.net.link",
             "org.onlab.packet",
@@ -614,7 +633,22 @@ def parse_score(xml_file) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
             "org.onosproject.event",
             "org.onosproject.net.flow",
             "org.onosproject.net.resource"
-        ]
+        ], 'floodlight': [
+            "net.floodlightcontroller.linkdiscovery",
+            "net.floodlightcontroller.topology",
+            "net.floodlightcontroller.devicemanager",
+            "net.floodlightcontroller.packet",
+            "net.floodlightcontroller.forwarding",
+            "net.floodlightcontroller.routing",
+            "net.floodlightcontroller.storage",
+            "net.floodlightcontroller.learningswitch"
+        ],'odl': [
+            "org.opendaylight.openflowplugin.applications.lldpspeaker",
+            "org.opendaylight.openflowplugin.applications.lldpdiscovery",
+            "org.opendaylight.openflowplugin.applications.topology.manager",
+            "org.opendaylight.openflowplugin.libraries.liblldp",
+            "org.opendaylight.openflowjava"
+        ]}
 
         metrics = {
             "INSTRUCTION": {"covered": 0, "missed": 0, "total": 0, "percent": 0.0},     # 指令覆盖率
@@ -638,7 +672,7 @@ def parse_score(xml_file) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
             #         is_target = True
             #         break
 
-            if pkg_name in target_packages: # 尝试是否能够增加覆盖率计算值
+            if pkg_name in target_packages[controller]: # 尝试是否能够增加覆盖率计算值
                 is_target = True
 
             # 4. 如果是目标包，累加其数据
@@ -683,8 +717,9 @@ def parse_score(xml_file) -> Optional[Dict[str, Dict[str, Union[int, float]]]]:
         return None
 
 def save_coverage_score(controller:str, classes_path:str, jacoco_cli_file: str, exec_file_path:str, xml_file_path:str, save_path:str):
+    controller = controller.lower()
     get_jacoco_report(controller, classes_path, jacoco_cli_file, exec_file_path, xml_file_path)
-    coverage_metrics = parse_score(xml_file_path)
+    coverage_metrics = parse_score(controller, xml_file_path)
     with open(save_path, 'a+', encoding='utf-8') as f:
         f.write(json.dumps(coverage_metrics) + '\n')
 

@@ -6,7 +6,9 @@ os_username = "ylc"
 logs = "logs/"
 scenarios = "scenarios/"
 ONOS_ROOT_DIR = "/home/ylc/onos/"
+ODL_ROOT_DIR = "/home/ylc/integration-distribution/karaf/target/assembly/"
 flt_classes_dir = "/home/ylc/floodlight/target/classes_runtime/"
+odl_classes_dir = "/home/ylc/integration-distribution/karaf/target/assembly/system/"
 trigger_packet = "trigger_packet.txt"
 
 [network]

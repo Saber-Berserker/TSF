@@ -28,6 +28,7 @@ config: Dict = {'will_draw': config_file['will_draw'], 'os_username': config_fil
                 'fuzz_lldp_times': config_file['algorithm']['fuzz_lldp_times'],
                 'lldp_mutation_iteration_max': config_file['algorithm']['lldp_mutation_iteration_max'],
                 'env_constraint_enable': config_file['algorithm']['env_constraint_enable'], 'odl_key': config_file['algorithm']['odl_key'],
+                'odl_classes_dir': config_file['paths']['odl_classes_dir'], 'ODL_ROOT_DIR': config_file['paths']['ODL_ROOT_DIR']
                 }
 del config_file
 

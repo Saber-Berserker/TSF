@@ -1,3 +1,17 @@
 sudo python -m cProfile -o output.prof Main.py
+
 ps aux | grep python
 pidstat -r -u -p 1007365 1 | awk '{ print strftime("%F %T"), $0 }' > pidstat.log
+
+
+python3 boofuzz_floodlight.py
+
+
+sudo python3 monitor.py
+
+
+sudo env AFL_SKIP_CPUFREQ=1 timeout 24h afl-fuzz -i onos_input_dir -o onos_output_dir -m none -t 10000+ -- ./harness @@
+
+
+~/.local/bin/boo open boofuzz-results/onos-24h.db --ui-addr 0.0.0.0 --ui-port 26000
+

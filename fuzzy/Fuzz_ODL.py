@@ -21,6 +21,8 @@ from data_structure.LLDP import TLV
 # 一些文件路径配置(调用的时候需要以 Main.py 所在目录为根目录)
 log_path: str = 'logs/'
 scenario_path: str = 'scenarios/'
+odl_root_dir: str = '~/integration-distribution/karaf/target/assembly/'
+odl_classes_dir:str = '/home/ylc/integration-distribution/karaf/target/assembly/system/'
 will_draw = False  # 是否绘制拓扑图
 
 # 一些常量
@@ -281,11 +283,11 @@ def init_odl(mininet_subprocess: process = None):
     :param mininet_subprocess:
     :return: odl, mininet
     """
-    global os_username, tp, sig, odl, mininet
+    global os_username, tp, sig, odl, mininet, odl_root_dir, is_eval
 
 
     # 启动 opendaylight
-    odl = Utils.start_opendaylight(os_username)
+    odl = Utils.start_opendaylight(os_username, odl_root_dir, is_eval)
     atexit.register(Utils.close_opendaylight, odl)
     # odl_subprocess.interactive()
 
@@ -312,7 +314,7 @@ def start_fuzzing(config: Dict, stdout: TextIO, eval_mode: bool):
     global odl, mininet, src_mac, mode_times, swarm_extra_init_times, fuzz_scenario_times,\
         fuzz_lldp_times, os_username, malicious_host, delimited_length, tlv_start_index, mutated_topography,\
         old_topography, mutator_manager, odl_scenarios, original_stdout, will_draw, is_eval, score, env_constraint_enable,\
-        key
+        key, odl_root_dir, odl_classes_dir
 
     # 获取参数，如果没有传入则使用原本全局的值
     tracemalloc.start()
@@ -328,6 +330,8 @@ def start_fuzzing(config: Dict, stdout: TextIO, eval_mode: bool):
     will_draw = config['will_draw']
     env_constraint_enable = config['env_constraint_enable']
     key = config['odl_key']
+    odl_root_dir = config['ODL_ROOT_DIR']
+    odl_classes_dir = config['odl_classes_dir']
 
     original_stdout = stdout
     is_eval = eval_mode
@@ -366,6 +370,15 @@ def start_fuzzing(config: Dict, stdout: TextIO, eval_mode: bool):
     mutated_topography.append(old_topography)
     logger.info("Initial topology graph has been built.")
 
+    if is_eval is True:
+        # 先清理之前的覆盖率数据
+        Utils.clear_old_coverage_data("evaluation/odl-coverage.exec", "evaluation/odl-coverage.json")
+        logger.info("Old coverage data cleared.")
+        # 首次保存未 Fuzzing 的覆盖率数据
+        Utils.save_coverage_score("Odl", odl_classes_dir, "evaluation/jacoco/lib/jacococli.jar",
+                                  "evaluation/odl-coverage.exec",
+                                  "evaluation/odl-report.xml", "evaluation/odl-coverage.json")
+
     for _ in range(mode_times):  # 模式测试次数
 
         for __ in range(fuzz_scenario_times):  # 测试场景
@@ -387,6 +400,11 @@ def start_fuzzing(config: Dict, stdout: TextIO, eval_mode: bool):
             mutator_manager.mininet_subprocess = mininet
             old_topography.graph.clear()
             ODL_TopologyGraph.build_topology_graph(old_topography)  # 重启 mininet 后，需要重新构建拓扑图
+
+            if is_eval is True:
+                Utils.save_coverage_score("Odl", odl_classes_dir, "evaluation/jacoco/lib/jacococli.jar",
+                                          "evaluation/odl-coverage.exec",
+                                          "evaluation/odl-report.xml", "evaluation/odl-coverage.json")
 
         # 重启 odl
         atexit.unregister(Utils.close_opendaylight)

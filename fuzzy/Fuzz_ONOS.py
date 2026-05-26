@@ -323,7 +323,7 @@ def get_feedback(lldp_hex: str, chosen_swarm: int, operator_enum: int,
                 flag = 3    # 直接就是断链路
                 oracle_times['latency'] += 1
                 break
-            elif int(per_recv.group(1)) >= 75 or int(per_recv.group(2)) >= 17000: # 丢包率和时延
+            elif int(per_recv.group(1)) >= 50 or int(per_recv.group(2)) >= 17000: # 丢包率和时延
                 temp += 1
                 sleep(0.5)
             else:

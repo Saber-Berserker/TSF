@@ -1,2 +1,2 @@
-cd /home/ylc/integration-distribution/karaf/target/assembly/bin &&
+cd $ODL_ROOT/bin &&
 ./karaf clean

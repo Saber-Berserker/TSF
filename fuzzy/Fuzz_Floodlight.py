@@ -240,13 +240,17 @@ def get_feedback(lldp_hex: str, chosen_swarm: int, operator_enum: int,
         while temp < 2:
             mininet.clean()
             mininet.sendline(get_latency.encode())
-            per_recv = re.search(r'(\d+)% packet loss, time (\d+)ms',
-                                 mininet.recvregex(rb"\d+% packet loss, time \d+ms").decode())
+            # tmp_output = mininet.recvregex(rb"\d+% packet loss, time \d+ms").decode()
+            tmp_output = mininet.recvuntil(b"mininet>")
+            if b"Unknown command" in tmp_output:
+                mininet.sendline(get_latency.encode())
+                tmp_output = mininet.recvregex(rb"\d+% packet loss, time \d+ms").decode()
+            per_recv = re.search(r'(\d+)% packet loss, time (\d+)ms', tmp_output.decode())
             if per_recv is None:
                 flag = 3  # 直接就是断链路
                 oracle_times['latency'] += 1
                 break
-            elif int(per_recv.group(1)) >= 75 or int(per_recv.group(2)) >= 17000:  # 丢包率和时延
+            elif int(per_recv.group(1)) >= 50 or int(per_recv.group(2)) >= 17000:  # 丢包率和时延
                 temp += 1
                 sleep(0.5)
             else:
@@ -312,7 +316,11 @@ def fuzz_scenario(lldp_scenario: List[str], init_swarm_generator: Generator):
             for i in range(len(new_lldp_fuzz_data[0])):
                 try:
                     new_lldp_fuzz_data[0][i] = send_mutated_lldp(new_lldp_fuzz_data[0][i])
-                    sleep(1.2)  # 等待一段时间，等待反馈信息，这个数字很影响整体系统的速度
+                    tmp_output = mininet.recvuntil(b'mininet> ', timeout=2)
+                    logger.debug(tmp_output)
+                    if b"Unknown command" in tmp_output:
+                        new_lldp_fuzz_data[0][i] = send_mutated_lldp(new_lldp_fuzz_data[0][i])
+                    # sleep(1.2)  # 等待一段时间，等待反馈信息，这个数字很影响整体系统的速度
                     get_feedback(new_lldp_fuzz_data[0][i].hex(), new_lldp_fuzz_data[1], new_lldp_fuzz_data[2][i],
                                  lldp_scenario, chosen_lldp_packet_index, tmp_packet)
                 except Exception as e:
@@ -401,6 +409,12 @@ def start_fuzzing(config: Dict, stdout: TextIO, eval_mode: bool):
         logger.error("Invalid input.")
         sys.exit(1)
 
+    logger.info("If you want to enable environment restart, please input Y/n:")     # 测评用，消融实验
+    if 'n' in input().lower():
+        env_restart = False
+    else:
+        env_restart = True
+
     logger.info("TSFuzzer started.")
 
     init_flt()
@@ -445,14 +459,15 @@ def start_fuzzing(config: Dict, stdout: TextIO, eval_mode: bool):
             logger.info('Chosen flt scenario index: {}', flt_scenarios.index(chosen_flt_scenario))
             fuzz_scenario(chosen_flt_scenario, init_swarm_generator)
 
-            # 重启 mininet
-            atexit.unregister(Utils.close_mininet)
-            Utils.close_mininet(mininet)
-            mininet = Utils.start_mininet(2, flt)
-            atexit.register(Utils.close_mininet, mininet)
-            logger.debug("flt and Mininet started. Message: {}", flt.recvrepeat(0.8).decode())
+            if env_restart is True:
+                # 重启 mininet
+                atexit.unregister(Utils.close_mininet)
+                Utils.close_mininet(mininet)
+                mininet = Utils.start_mininet(2, flt)
+                atexit.register(Utils.close_mininet, mininet)
+                logger.debug("flt and Mininet started. Message: {}", flt.recvrepeat(0.8).decode())
+                mutator_manager.mininet_subprocess = mininet
 
-            mutator_manager.mininet_subprocess = mininet
             old_topography.graph.clear()
             FLT_TopologyGraph.build_topology_graph(old_topography)  # 重启 mininet 后，需要重新构建拓扑图
 
@@ -460,12 +475,12 @@ def start_fuzzing(config: Dict, stdout: TextIO, eval_mode: bool):
                 Utils.save_coverage_score("Floodlight", config['flt_classes_dir'], "evaluation/jacoco/lib/jacococli.jar",
                                      "evaluation/flt-coverage.exec",
                                      "evaluation/flt-report.xml", "evaluation/flt-coverage.json")
-
-        # 重启 flt
-        atexit.unregister(Utils.close_floodlight)
-        Utils.close_floodlight(flt)
-        init_flt(mininet)
-        atexit.register(Utils.close_floodlight, flt)
+        if env_restart is True:
+            # 重启 flt
+            atexit.unregister(Utils.close_floodlight)
+            Utils.close_floodlight(flt)
+            init_flt(mininet)
+            atexit.register(Utils.close_floodlight, flt)
 
     logger.info(f"All Send times: {send_packets}")
     # 调试下内存使用情况
