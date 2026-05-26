@@ -36,7 +36,7 @@ TSF has been evaluated on three mainstream SDN controllers and successfully unco
 To avoid network I/O bottlenecks and ensure stable fuzzing execution, it is recommended to co-locate TSF, the Mininet emulator, and the target controller on a dedicated high-performance server (e.g., Ubuntu, Intel Xeon, 64GB RAM).
 
 - **OS:** Ubuntu Linux 
-- **Python:** Python 3 (For the TSF framework)
+- **Python:** Python 3.9+ (For the TSF framework)
 - **Emulator:** Mininet v2.2.2 
 - **Core Libraries:** `Pwntools` (for lifecycle management), `Scapy` (for packet injection), `NetworkX` & `JSON` (for topology graph consistency checking).
 
