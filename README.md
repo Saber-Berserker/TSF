@@ -43,7 +43,7 @@ To avoid network I/O bottlenecks and ensure stable fuzzing execution, it is reco
 
 ## 🚀 Target Controller Deployment
 
-For reproducible results, deploy the specific controller versions tested (During the test, simply select a running option):
+For reproducible results, deploy the specific controller versions tested (During the test, simply select a controller running option):
 
 ### 1. ONOS (v2.7.0-rc2)
 
